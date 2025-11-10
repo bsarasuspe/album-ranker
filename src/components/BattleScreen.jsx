@@ -8,7 +8,7 @@ export default function BattleScreen({ album, onFinish }) {
   const [scores, setScores] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Traer tracks del álbum desde la API
+  // Traer tracks desde la API de Spotify
   useEffect(() => {
     if (!album?.id) return;
 
@@ -48,23 +48,27 @@ export default function BattleScreen({ album, onFinish }) {
 
   // Manejar selección de canción
   const handleSelect = (song) => {
-    // Sumar un punto al ganador
-    setScores(prev => ({ ...prev, [song.id]: (prev[song.id] || 0) + 1 }));
+    if (!song) return;
+
+    // Actualizamos los scores localmente para poder calcular el ranking final
+    const newScores = { ...scores, [song.id]: (scores[song.id] || 0) + 1 };
+    setScores(newScores);
 
     const nextIndex = currentPairIndex + 1;
 
     if (nextIndex >= pairs.length) {
       // Se terminaron todas las comparaciones: generar ranking
       const ranked = [...tracks].sort(
-        (a, b) => (scores[b.id] || 0) - (scores[a.id] || 0)
+        (a, b) => (newScores[b.id] || 0) - (newScores[a.id] || 0)
       );
-      onFinish(ranked);
+      onFinish(ranked, newScores);
     } else {
       setCurrentPairIndex(nextIndex);
     }
   };
 
-  if (loading || pairs.length === 0) return <p className="text-center mt-10">Cargando canciones...</p>;
+  if (loading || pairs.length === 0)
+    return <p className="text-center mt-10">Cargando canciones...</p>;
 
   const [first, second] = pairs[currentPairIndex];
 
