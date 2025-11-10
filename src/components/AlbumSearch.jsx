@@ -5,6 +5,7 @@ export default function AlbumSearch({ onSelectAlbum }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Debounce para autocompletado
   useEffect(() => {
     if (!query) {
       setSuggestions([]);
@@ -29,8 +30,9 @@ export default function AlbumSearch({ onSelectAlbum }) {
   }, [query]);
 
   const handleSelect = (album) => {
-    onSelectAlbum(album); // Solo enviar el álbum seleccionado
-    setQuery(album.name);
+    if (!album) return;
+    onSelectAlbum(album); // pasa el álbum al padre
+    setQuery(album.name || '');
     setSuggestions([]);
   };
 
@@ -47,16 +49,20 @@ export default function AlbumSearch({ onSelectAlbum }) {
 
       {suggestions.length > 0 && (
         <div className="absolute top-full left-0 w-full bg-white border mt-1 rounded shadow-lg z-10 max-h-60 overflow-y-auto">
-          {suggestions.map(album => (
+          {suggestions.map((album) => (
             <div
               key={album.id}
               onClick={() => handleSelect(album)}
               className="cursor-pointer p-2 hover:bg-blue-100 flex items-center gap-2"
             >
-              <img src={album.cover} alt={album.name} className="w-10 h-10 object-cover rounded"/>
+              <img
+                src={album.cover || ''}
+                alt={album.name || 'Desconocido'}
+                className="w-10 h-10 object-cover rounded"
+              />
               <div>
-                <p className="text-sm font-semibold">{album.name}</p>
-                <p className="text-xs text-gray-500">{album.artist}</p>
+                <p className="text-sm font-semibold">{album.name || 'Desconocido'}</p>
+                <p className="text-xs text-gray-500">{album.artist || 'Artista desconocido'}</p>
               </div>
             </div>
           ))}
