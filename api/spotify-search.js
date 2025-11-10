@@ -3,7 +3,6 @@ import fetch from "node-fetch";
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
-// Función para obtener token de Spotify
 async function getSpotifyToken() {
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -13,9 +12,8 @@ async function getSpotifyToken() {
     },
     body: 'grant_type=client_credentials',
   });
-
   const data = await res.json();
-  return data.access_token; // token válido 1h
+  return data.access_token;
 }
 
 export default async function handler(req, res) {
@@ -33,9 +31,8 @@ export default async function handler(req, res) {
   try {
     const token = await getSpotifyToken();
 
-    // Buscar álbumes en Spotify
     const searchUrl = new URL('https://api.spotify.com/v1/search');
-    searchUrl.search = new URLSearchParams({ q, type: 'album', limit: 5 }).toString();
+    searchUrl.search = new URLSearchParams({ q, type: 'album', limit: 10 }).toString();
 
     const searchRes = await fetch(searchUrl.toString(), {
       headers: { Authorization: `Bearer ${token}` },
@@ -50,13 +47,15 @@ export default async function handler(req, res) {
 
     const searchData = await searchRes.json();
 
-    // Formatear resultados de álbumes
-    const albums = (searchData.albums.items || []).map(album => ({
-      id: album.id,
-      name: album.name,
-      artist: album.artists.map(a => a.name).join(', '),
-      cover: album.images[0]?.url || '',
-    }));
+    // Filtrar solo álbumes (descartar singles)
+    const albums = (searchData.albums.items || [])
+      .filter(album => album.album_type === "album" || album.album_type === "compilation")
+      .map(album => ({
+        id: album.id,
+        name: album.name,
+        artist: album.artists.map(a => a.name).join(', '),
+        cover: album.images[0]?.url || '',
+      }));
 
     res.status(200).json({ albums });
   } catch (err) {
