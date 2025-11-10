@@ -3,11 +3,12 @@ import BattleCard from './BattleCard';
 
 export default function BattleScreen({ album, onFinish }) {
   const [tracks, setTracks] = useState([]);
-  const [currentPair, setCurrentPair] = useState([]);
+  const [pairs, setPairs] = useState([]); // todas las combinaciones
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [scores, setScores] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Traer tracks desde la API de Spotify
+  // Traer tracks del álbum
   useEffect(() => {
     if (!album?.id) return;
 
@@ -28,41 +29,49 @@ export default function BattleScreen({ album, onFinish }) {
     fetchTracks();
   }, [album]);
 
-  // Generar primer par cuando tracks >= 2
+  // Generar todas las combinaciones posibles de pares
   useEffect(() => {
-    if (tracks.length >= 2) generatePair();
+    if (tracks.length < 2) return;
+
+    const allPairs = [];
+    for (let i = 0; i < tracks.length; i++) {
+      for (let j = i + 1; j < tracks.length; j++) {
+        allPairs.push([tracks[i], tracks[j]]);
+      }
+    }
+    // Opcional: mezclar los pares aleatoriamente
+    setPairs(allPairs.sort(() => Math.random() - 0.5));
+    setCurrentPairIndex(0);
+    setScores({});
   }, [tracks]);
 
-  const shuffle = (array) => (array || []).sort(() => Math.random() - 0.5);
-
-  const generatePair = () => {
-    if (!tracks || tracks.length < 2) {
-      onFinish(tracks, scores);
-      setCurrentPair([]);
-      return;
-    }
-    const [first, second, ...rest] = shuffle(tracks);
-    setCurrentPair([first, second]);
-    setTracks(rest);
-  };
-
   const handleSelect = (song) => {
-    if (!song) return;
-    setScores((prev) => ({ ...prev, [song.id]: (prev[song.id] || 0) + 1 }));
-    generatePair();
+    setScores(prev => ({ ...prev, [song.id]: (prev[song.id] || 0) + 1 }));
+
+    const nextIndex = currentPairIndex + 1;
+    if (nextIndex >= pairs.length) {
+      // Terminamos todas las comparaciones
+      // Ordenar canciones por victorias
+      const ranked = [...tracks].sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0));
+      onFinish(ranked);
+    } else {
+      setCurrentPairIndex(nextIndex);
+    }
   };
 
-  if (loading) return <p className="text-center mt-10">Cargando canciones...</p>;
-  if (!currentPair || currentPair.length !== 2)
-    return <p className="text-center mt-10">No hay suficientes canciones para la batalla</p>;
+  if (loading || pairs.length === 0) return <p className="text-center mt-10">Cargando canciones...</p>;
+
+  const [first, second] = pairs[currentPairIndex];
 
   return (
     <div className="p-4 max-w-xl mx-auto flex flex-col items-center space-y-4">
       <div className="flex gap-4">
-        {currentPair.map((song) => (
-          <BattleCard key={song.id} song={song} album={album} onSelect={handleSelect} />
-        ))}
+        <BattleCard key={first.id} song={first} album={album} onSelect={handleSelect} />
+        <BattleCard key={second.id} song={second} album={album} onSelect={handleSelect} />
       </div>
+      <p className="text-sm text-gray-500 mt-2">
+        Comparación {currentPairIndex + 1} de {pairs.length}
+      </p>
     </div>
   );
 }
