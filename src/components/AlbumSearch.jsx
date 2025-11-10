@@ -4,9 +4,11 @@ export default function AlbumSearch({ onSelectAlbum }) {
   const [query, setQuery] = useState('');
   const [albums, setAlbums] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
+  const [tracks, setTracks] = useState([]); // estado para canciones
   const [loading, setLoading] = useState(false);
+  const [loadingTracks, setLoadingTracks] = useState(false);
 
-  // Debounce manual
+  // Debounce manual para buscar álbumes
   useEffect(() => {
     if (!query) {
       setSuggestions([]);
@@ -25,15 +27,29 @@ export default function AlbumSearch({ onSelectAlbum }) {
       } finally {
         setLoading(false);
       }
-    }, 300); // espera 300ms después de escribir
+    }, 300);
 
     return () => clearTimeout(timeout);
   }, [query]);
 
-  const handleSelect = (album) => {
+  // Cuando se selecciona un álbum
+  const handleSelect = async (album) => {
     onSelectAlbum(album);
     setQuery(album.name);
     setSuggestions([]);
+
+    // Cargar canciones del álbum
+    setLoadingTracks(true);
+    try {
+      const res = await fetch(`/api/spotify-tracks?albumId=${album.id}`);
+      const data = await res.json();
+      setTracks(data.tracks || []);
+    } catch (err) {
+      console.error('Error fetching tracks:', err);
+      setTracks([]);
+    } finally {
+      setLoadingTracks(false);
+    }
   };
 
   return (
@@ -64,6 +80,18 @@ export default function AlbumSearch({ onSelectAlbum }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Lista de canciones */}
+      {loadingTracks && <p className="mt-2 text-gray-500 text-sm">Cargando canciones...</p>}
+      {tracks.length > 0 && (
+        <ul className="mt-4 border rounded p-2 max-h-64 overflow-y-auto">
+          {tracks.map(track => (
+            <li key={track.id} className="py-1 border-b last:border-b-0">
+              {track.name} <span className="text-xs text-gray-500">({track.artists})</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
