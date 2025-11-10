@@ -60,7 +60,7 @@ export default function BattleScreen({ album, onFinish }) {
     <div className="p-4 max-w-xl mx-auto flex flex-col items-center space-y-4">
       <div className="flex gap-4">
         {currentPair.map((song) => (
-          <BattleCard key={song.id} song={song} onSelect={handleSelect} />
+          <BattleCard key={song.id} song={song} album={album} onSelect={handleSelect} />
         ))}
       </div>
     </div>
