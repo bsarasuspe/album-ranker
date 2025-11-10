@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { searchAlbum } from '../api/Genius';
+import { searchAlbum } from '../../api/Genius';
 
 export default function AlbumSearch({ onSelectAlbum }) {
   const [query, setQuery] = useState('');

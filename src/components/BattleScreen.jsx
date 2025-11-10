@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import BattleCard from './BattleCard';
-import { getAlbumTracks } from '../api/Genius';
+import { getAlbumTracks } from '../../api/Genius';
 
 export default function BattleScreen({ album, onFinish }) {
   const [tracks, setTracks] = useState([]);
