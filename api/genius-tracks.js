@@ -2,10 +2,16 @@ import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   const token = process.env.GENIUS_TOKEN;
-  if (!token) return res.status(500).json({ error: "No GENIUS_TOKEN" });
+  if (!token) {
+    res.status(500).json({ error: "No GENIUS_TOKEN set in environment variables" });
+    return;
+  }
 
   const { albumId } = req.query;
-  if (!albumId) return res.status(400).json({ error: "albumId required" });
+  if (!albumId) {
+    res.status(400).json({ error: "Query parameter 'albumId' is required" });
+    return;
+  }
 
   try {
     const url = new URL(`https://api.genius.com/albums/${albumId}/tracks`);
@@ -15,7 +21,12 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!response.ok) throw new Error('Genius API error ' + response.status);
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Genius Tracks API Error:', response.status, text);
+      res.status(500).json({ error: 'Failed to fetch Genius tracks', status: response.status, details: text });
+      return;
+    }
 
     const data = await response.json();
     const tracks = data.response.tracks || data.response.items || [];
@@ -32,7 +43,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ tracks: result });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch Genius tracks' });
+    console.error('Function crashed:', err);
+    res.status(500).json({ error: 'Failed to fetch Genius tracks', details: err.message });
   }
 }
